@@ -4,9 +4,13 @@ import getTaxis from '../../services/free-now';
 import { List, WindowScroller } from 'react-virtualized';
 import GoogleMapReact from 'google-map-react';
 import Marker from '../../components/Marker';
+import isActive from '../../utils/vehicles';
+
+const DEFAULT_ZOOM = 18;
+const API_KEY = 'AIzaSyCzeXJiOZHF9bq0KOPFvnHZi0xHAOCfXdc';
 
 const mapContainer = {
-  width: 'calc(100% - 300px)',
+  width: 'calc(100% - 400px)',
   height: '100vh',
   position: 'absolute',
   top: 0,
@@ -14,7 +18,7 @@ const mapContainer = {
 };
 
 const listContainerStyles = {
-  width: 300,
+  width: 400,
   height: '100vh',
   backgroundColor: 'grey',
   position: 'relative',
@@ -27,15 +31,10 @@ class VehicleList extends React.Component {
   state = {
     taxis: [],
     vehicles: [],
-    center: this.props.center
-  };
-
-  static defaultProps = {
     center: {
       lat: 53.5532316,
       lng: 10.0087783
-    },
-    zoom: 18
+    }
   };
 
   rowRenderer = ({ key, index, style }) => {
@@ -43,21 +42,52 @@ class VehicleList extends React.Component {
     const allVehicles = taxis.concat(vehicles);
     if (allVehicles[index].state) {
       return (
-        <li
+        <div
           onClick={() => this.handleCenterMap(allVehicles[index].coordinate)}
           key={key}
-          style={{ ...style, backgroundColor: 'pink', height: 100 }}
+          style={{
+            ...style,
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            height: 100,
+            borderBottom: '1px solid lightgrey',
+            backgroundColor: isActive(allVehicles[index].state) ? 'green' : 'red',
+            color: 'white'
+          }}
         >
-          {allVehicles[index].state}
-        </li>
+          Taxi {allVehicles[index].state}
+        </div>
       );
     }
+    const vehicleLatitude = allVehicles[index].coordinates[1];
+    const vehicleLongitude = allVehicles[index].coordinates[0];
+    const vehicleCoordinates = { latitude: vehicleLatitude, longitude: vehicleLongitude };
+
     return (
-      <div key={key} style={{ ...style, backgroundColor: 'yellow', height: 100 }}>
-        <li>{allVehicles[index].address}</li>
-        <li>{allVehicles[index].exterior}</li>
-        <li>{allVehicles[index].fuel}</li>
-        <li>{allVehicles[index].interior}</li>
+      <div
+        onClick={() => this.handleCenterMap(vehicleCoordinates)}
+        key={key}
+        style={{
+          ...style,
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'center',
+          flexDirection: 'column',
+          backgroundColor: 'white',
+          height: 100,
+          lineHeight: '15px',
+          padding: 10,
+          fontSize: 14,
+          borderBottom: '1px solid lightgrey'
+        }}
+      >
+        <span>Address: {allVehicles[index].address}</span>
+        <p>
+          <span style={{ paddingRight: 10 }}>Exterior: {allVehicles[index].exterior}</span>
+          <span>Interior: {allVehicles[index].interior}</span>
+        </p>
+        <span>Fuel: {allVehicles[index].fuel} %</span>
       </div>
     );
   };
@@ -100,7 +130,7 @@ class VehicleList extends React.Component {
           <WindowScroller>
             {({ height }) => (
               <List
-                width={300}
+                width={400}
                 height={height}
                 rowCount={taxis.length + vehicles.length}
                 rowHeight={100}
@@ -114,20 +144,27 @@ class VehicleList extends React.Component {
         <div style={mapContainer}>
           {taxis.length > 0 && vehicles.length > 0 && (
             <GoogleMapReact
-              ref={ref => {
-                this.map = ref;
-              }}
-              bootstrapURLKeys={{ key: 'AIzaSyCzeXJiOZHF9bq0KOPFvnHZi0xHAOCfXdc' }}
+              bootstrapURLKeys={{ key: API_KEY }}
               yesIWantToUseGoogleMapApiInternals
-              defaultZoom={this.props.zoom}
+              defaultZoom={DEFAULT_ZOOM}
               center={center}
             >
               {taxis.map(taxi => (
                 <Marker
+                  iconName="taxi"
+                  iconColor={isActive(taxi.state) ? 'green' : 'red'}
                   key={taxi.id}
                   lat={taxi.coordinate.latitude}
                   lng={taxi.coordinate.longitude}
-                  text="My Marker"
+                />
+              ))}
+
+              {vehicles.map(vehicle => (
+                <Marker
+                  iconName="car"
+                  key={vehicle.id}
+                  lat={vehicle.coordinates[1]}
+                  lng={vehicle.coordinates[0]}
                 />
               ))}
             </GoogleMapReact>

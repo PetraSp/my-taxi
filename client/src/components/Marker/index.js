@@ -1,10 +1,10 @@
 import React from 'react';
 
 function Marker(props) {
+  const { iconName, iconColor } = props;
   return (
     <div>
-      <i className="fa fa-taxi" />
-        {props.text}
+      <i style={{ color: iconColor }} className={`fa fa-${iconName}`} />
     </div>
   );
 }
